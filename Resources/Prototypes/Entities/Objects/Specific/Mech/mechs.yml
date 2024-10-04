@@ -291,6 +291,9 @@
   - type: MovementSpeedModifier
     baseWalkSpeed: 2.25
     baseSprintSpeed: 3.6
+  - type: Access
+    tags:
+    - Maintenance
   # TOOD: buzz / chime actions
   # TODO: builtin flashlight
 
@@ -329,6 +332,9 @@
     equipmentWhitelist:
       tags:
       - CombatMech
+    pilotWhitelist:
+      components:
+        - HumanoidAppearance
   - type: MeleeWeapon
     hidden: true
     attackRate: 0.70
@@ -379,6 +385,9 @@
     equipmentWhitelist:
       tags:
       - CombatMech
+    pilotWhitelist:
+      components:
+        - HumanoidAppearance
   - type: MeleeWeapon
     hidden: true
     attackRate: 0.70
@@ -429,6 +438,9 @@
     equipmentWhitelist:
       tags:
       - CombatMech
+    pilotWhitelist:
+      components:
+        - HumanoidAppearance
   - type: MeleeWeapon
     hidden: true
     attackRate: 1
@@ -479,6 +491,9 @@
     equipmentWhitelist:
       tags:
       - CombatMech
+    pilotWhitelist:
+      components:
+        - HumanoidAppearance
   - type: MeleeWeapon
     hidden: true
     attackRate: 0.70

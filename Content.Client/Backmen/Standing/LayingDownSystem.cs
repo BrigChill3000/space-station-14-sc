@@ -1,3 +1,4 @@
+using Content.Shared.ActionBlocker;
 using Content.Shared.Backmen.CCVar;
 using Content.Shared.Backmen.Standing;
 using Content.Shared.Buckle;
@@ -26,10 +27,49 @@ public sealed class LayingDownSystem : SharedLayingDownSystem
         base.Initialize();
 
         SubscribeLocalEvent<LayingDownComponent, MoveEvent>(OnMovementInput);
+        SubscribeAllEvent<DrawDownedEvent>(OnDowned);
+        SubscribeAllEvent<DrawUpEvent>(OnUp);
+        SubscribeLocalEvent<LayingDownComponent, StoodEvent>(OnStood);
 
         _cfg.OnValueChanged(CCVars.AutoGetUp, b => _autoGetUp = b, true);
 
         //SubscribeNetworkEvent<CheckAutoGetUpEvent>(OnCheckAutoGetUp);
+    }
+
+    private void OnUp(DrawUpEvent args)
+    {
+        if(!TryGetEntity(args.Uid, out var uid))
+            return;
+
+        if (!TryComp<SpriteComponent>(uid, out var sprite)
+            || !TryComp<LayingDownComponent>(uid, out var component)
+            || !component.OriginalDrawDepth.HasValue)
+            return;
+
+        sprite.DrawDepth = component.OriginalDrawDepth.Value;
+    }
+
+    private void OnDowned(DrawDownedEvent args)
+    {
+        if(!TryGetEntity(args.Uid, out var uid))
+            return;
+
+        if (!TryComp<SpriteComponent>(uid, out var sprite)
+            || !TryComp<LayingDownComponent>(uid, out var component))
+            return;
+
+        if (!component.OriginalDrawDepth.HasValue)
+            component.OriginalDrawDepth = sprite.DrawDepth;
+
+        sprite.DrawDepth = (int) Content.Shared.DrawDepth.DrawDepth.SmallMobs;
+    }
+
+    private void OnStood(EntityUid uid, LayingDownComponent component, StoodEvent args)
+    {
+        if (!TryComp<SpriteComponent>(uid, out var sprite)
+            || !component.OriginalDrawDepth.HasValue)
+            return;
+        sprite.DrawDepth = component.OriginalDrawDepth.Value;
     }
 
     private bool _autoGetUp;
@@ -43,20 +83,10 @@ public sealed class LayingDownSystem : SharedLayingDownSystem
     {
         if (!_timing.IsFirstTimePredicted)
             return;
-
-        if (!_standing.IsDown(uid))
+        if(!_standing.IsDown(uid) || _animation.HasRunningAnimation(uid, "rotate") || _buckle.IsBuckled(uid))
             return;
-
-        if (_buckle.IsBuckled(uid))
-            return;
-
-        if (_animation.HasRunningAnimation(uid, "rotate"))
-            return;
-
         if(TerminatingOrDeleted(uid))
             return;
-
-        var transform = Transform(uid);
 
         if (!TryComp<SpriteComponent>(uid, out var sprite)
             || !TryComp<RotationVisualsComponent>(uid, out var rotationVisuals))
@@ -64,7 +94,7 @@ public sealed class LayingDownSystem : SharedLayingDownSystem
             return;
         }
 
-        ProcessVisuals((uid, transform, sprite, rotationVisuals));
+        ProcessVisuals((uid, Transform(uid), sprite, rotationVisuals));
     }
 
     private void ProcessVisuals(Entity<TransformComponent, SpriteComponent?, RotationVisualsComponent> entity)

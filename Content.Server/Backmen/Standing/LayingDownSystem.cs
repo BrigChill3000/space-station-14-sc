@@ -1,6 +1,7 @@
 using Content.Shared.Backmen.CCVar;
 using Content.Shared.Backmen.Standing;
 using Content.Shared.Rotation;
+using Content.Shared.Standing;
 using Robust.Shared.Configuration;
 using Robust.Shared.Player;
 
@@ -16,6 +17,20 @@ public sealed class LayingDownSystem : SharedLayingDownSystem // WD EDIT
         base.Initialize();
 
         //SubscribeNetworkEvent<CheckAutoGetUpEvent>(OnCheckAutoGetUp);
+        SubscribeLocalEvent<LayingDownComponent, StoodEvent>(OnStoodEvent);
+        SubscribeLocalEvent<LayingDownComponent, DownedEvent>(OnDownedEvent);
+    }
+    private void OnDownedEvent(Entity<LayingDownComponent> ent, ref DownedEvent args)
+    {
+        // Raising this event will lower the entity's draw depth to the same as a small mob.
+        if (CrawlUnderTables)
+            RaiseNetworkEvent(new DrawDownedEvent(GetNetEntity(ent)), Filter.Pvs(ent));
+    }
+
+    private void OnStoodEvent(Entity<LayingDownComponent> ent, ref StoodEvent args)
+    {
+        if (CrawlUnderTables)
+            RaiseNetworkEvent(new DrawUpEvent(GetNetEntity(ent)), Filter.Pvs(ent).RemovePlayerByAttachedEntity(ent));
     }
 
     public override void AutoGetUp(Entity<LayingDownComponent> ent)
@@ -30,10 +45,12 @@ public sealed class LayingDownSystem : SharedLayingDownSystem // WD EDIT
         if (rotation.GetDir() is Direction.SouthEast or Direction.East or Direction.NorthEast or Direction.North)
         {
             rotationVisualsComp.HorizontalRotation = Angle.FromDegrees(270);
+            Dirty(ent, rotationVisualsComp);
             return;
         }
 
         rotationVisualsComp.HorizontalRotation = Angle.FromDegrees(90);
+        Dirty(ent, rotationVisualsComp);
     }
 
     protected override bool GetAutoGetUp(Entity<LayingDownComponent> ent, ICommonSession session)
